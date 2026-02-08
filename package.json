@@ -21,6 +21,9 @@
     "react-router-dom": "^7.10.1",
     "sonner": "^1.7.3"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "*"
+  },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
