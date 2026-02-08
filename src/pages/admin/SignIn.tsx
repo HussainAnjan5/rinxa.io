@@ -95,12 +95,6 @@ export const SignIn: React.FC = () => {
             </button>
           </form>
 
-          {/* Default Credentials Info */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800 font-medium mb-1">Default Credentials:</p>
-            <p className="text-sm text-blue-600">Email: admin@rinxa.io</p>
-            <p className="text-sm text-blue-600">Password: admin123</p>
-          </div>
         </div>
       </div>
     </div>
