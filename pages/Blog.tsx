@@ -46,66 +46,62 @@ const Blog: React.FC = () => {
   }, [selectedCategory, searchQuery]);
 
   const loadPosts = async () => {
+    setLoading(true);
+    setError(null);
+
+    // Convert static blog posts to API format - ALWAYS AVAILABLE
+    const convertedStaticPosts: BlogPostAPI[] = staticBlogPosts.map(post => ({
+      _id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      thumbnail: post.thumbnail,
+      author: {
+        name: post.author.name,
+        avatar: post.author.avatar,
+        bio: post.author.role,
+      },
+      category: post.category.name,
+      date: post.date,
+      readTime: post.readTime,
+      tags: post.tags,
+    }));
+
+    // Filter static posts based on category and search
+    let filteredStaticPosts = convertedStaticPosts;
+    if (selectedCategory !== 'All') {
+      filteredStaticPosts = convertedStaticPosts.filter(
+        post => post.category === selectedCategory
+      );
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filteredStaticPosts = filteredStaticPosts.filter(
+        post => 
+          post.title.toLowerCase().includes(query) ||
+          post.excerpt.toLowerCase().includes(query) ||
+          post.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Try to fetch API posts (optional - won't affect static posts if fails)
+    let apiPosts: BlogPostAPI[] = [];
     try {
-      setLoading(true);
       const params: any = {};
       if (selectedCategory !== 'All') params.category = selectedCategory;
       if (searchQuery) params.search = searchQuery;
-
-      // Convert static blog posts to API format
-      const convertedStaticPosts: BlogPostAPI[] = staticBlogPosts.map(post => ({
-        _id: post.id,
-        slug: post.slug,
-        title: post.title,
-        excerpt: post.excerpt,
-        thumbnail: post.thumbnail,
-        author: {
-          name: post.author.name,
-          avatar: post.author.avatar,
-          bio: post.author.role,
-        },
-        category: post.category.name,
-        date: post.date,
-        readTime: post.readTime,
-        tags: post.tags,
-      }));
-
-      // Fetch API posts
-      let apiPosts: BlogPostAPI[] = [];
-      try {
-        const data = await blogService.getAllPosts(params);
-        apiPosts = data.posts || data;
-      } catch (apiError) {
-        console.log('API posts not available, showing static posts only');
-      }
-
-      // Filter static posts based on category and search
-      let filteredStaticPosts = convertedStaticPosts;
-      if (selectedCategory !== 'All') {
-        filteredStaticPosts = convertedStaticPosts.filter(
-          post => post.category === selectedCategory
-        );
-      }
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filteredStaticPosts = filteredStaticPosts.filter(
-          post => 
-            post.title.toLowerCase().includes(query) ||
-            post.excerpt.toLowerCase().includes(query) ||
-            post.tags.some(tag => tag.toLowerCase().includes(query))
-        );
-      }
-
-      // Merge static and API posts
-      const allPosts = [...filteredStaticPosts, ...apiPosts];
-      setPosts(allPosts);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading posts:', err);
-      setError('Failed to load blog posts. Please try again later.');
-    } finally {
-      setLoading(false);
+      
+      const data = await blogService.getAllPosts(params);
+      apiPosts = data.posts || data || [];
+    } catch (apiError) {
+      console.log('API posts not available, showing static posts only:', apiError);
+      // Continue with static posts only - no error shown to user
     }
+
+    // Merge static and API posts - static posts are ALWAYS included
+    const allPosts = [...filteredStaticPosts, ...apiPosts];
+    setPosts(allPosts);
+    setLoading(false);
   };
 
   return (

@@ -47,58 +47,59 @@ const BlogPost: React.FC = () => {
   }, [slug]);
 
   const loadPost = async () => {
-    try {
-      setLoading(true);
-      
-      // First, check if it's a static post
-      const staticPost = getStaticPostBySlug(slug!);
-      
-      if (staticPost) {
-        // Convert static post to API format
-        const convertedPost: BlogPostAPI = {
-          _id: staticPost.id,
-          slug: staticPost.slug,
-          title: staticPost.title,
-          excerpt: staticPost.excerpt,
-          content: staticPost.content,
-          thumbnail: staticPost.thumbnail,
-          author: {
-            name: staticPost.author.name,
-            avatar: staticPost.author.avatar,
-            bio: staticPost.author.role,
-          },
-          category: staticPost.category.name,
-          date: staticPost.date,
-          readTime: staticPost.readTime,
-          tags: staticPost.tags,
-        };
-        setPost(convertedPost);
+    setLoading(true);
+    
+    // First, check if it's a static post - ALWAYS CHECK THIS
+    const staticPost = getStaticPostBySlug(slug!);
+    
+    if (staticPost) {
+      // Convert static post to API format
+      const convertedPost: BlogPostAPI = {
+        _id: staticPost.id,
+        slug: staticPost.slug,
+        title: staticPost.title,
+        excerpt: staticPost.excerpt,
+        content: staticPost.content,
+        thumbnail: staticPost.thumbnail,
+        author: {
+          name: staticPost.author.name,
+          avatar: staticPost.author.avatar,
+          bio: staticPost.author.role,
+        },
+        category: staticPost.category.name,
+        date: staticPost.date,
+        readTime: staticPost.readTime,
+        tags: staticPost.tags,
+      };
+      setPost(convertedPost);
 
-        // Load related static posts by category
-        const relatedStatic = staticBlogPosts
-          .filter(p => p.category.name === staticPost.category.name && p.slug !== slug)
-          .slice(0, 3)
-          .map(p => ({
-            _id: p.id,
-            slug: p.slug,
-            title: p.title,
-            excerpt: p.excerpt,
-            content: p.content,
-            thumbnail: p.thumbnail,
-            author: {
-              name: p.author.name,
-              avatar: p.author.avatar,
-              bio: p.author.role,
-            },
-            category: p.category.name,
-            date: p.date,
-            readTime: p.readTime,
-            tags: p.tags,
-          }));
-        setRelatedPosts(relatedStatic);
-        setError(false);
-      } else {
-        // If not found in static posts, try API
+      // Load related static posts by category
+      const relatedStatic = staticBlogPosts
+        .filter(p => p.category.name === staticPost.category.name && p.slug !== slug)
+        .slice(0, 3)
+        .map(p => ({
+          _id: p.id,
+          slug: p.slug,
+          title: p.title,
+          excerpt: p.excerpt,
+          content: p.content,
+          thumbnail: p.thumbnail,
+          author: {
+            name: p.author.name,
+            avatar: p.author.avatar,
+            bio: p.author.role,
+          },
+          category: p.category.name,
+          date: p.date,
+          readTime: p.readTime,
+          tags: p.tags,
+        }));
+      setRelatedPosts(relatedStatic);
+      setError(false);
+      setLoading(false);
+    } else {
+      // If not found in static posts, try API
+      try {
         const postData = await blogService.getPostBySlug(slug!);
         setPost(postData);
 
@@ -106,12 +107,12 @@ const BlogPost: React.FC = () => {
         const related = await blogService.getPostsByCategory(postData.category, 3);
         setRelatedPosts(related.filter((p: BlogPostAPI) => p.slug !== slug));
         setError(false);
+      } catch (err) {
+        console.error('Error loading post from API:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error loading post:', err);
-      setError(true);
-    } finally {
-      setLoading(false);
     }
   };
 
