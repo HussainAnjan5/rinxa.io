@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, Tag, Search } from 'lucide-react';
 import { blogService, getImageUrl } from '../src/services/api';
 import { blogPosts as staticBlogPosts } from '../data/blogPosts';
-
 interface BlogPostAPI {
   _id: string;
   slug: string;
