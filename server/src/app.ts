@@ -34,6 +34,15 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
+    const isVercelPreview = origin.endsWith('.vercel.app');
+    if (isVercelPreview) {
+      return callback(null, true);
+    }
+    // Check if origin matches rinxa.io domain (with or without www)
+    const isRinxaDomain = origin.match(/^https?:\/\/(www\.)?rinxa\.io$/);
+    if (isRinxaDomain) {
+      return callback(null, true);
+    }
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
