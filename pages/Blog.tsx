@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, Tag, Search } from 'lucide-react';
 import { blogService, getImageUrl } from '../src/services/api';
+import { blogPosts as staticBlogPosts } from '../data/blogPosts';
 
 interface BlogPostAPI {
   _id: string;
@@ -51,8 +52,53 @@ const Blog: React.FC = () => {
       if (selectedCategory !== 'All') params.category = selectedCategory;
       if (searchQuery) params.search = searchQuery;
 
-      const data = await blogService.getAllPosts(params);
-      setPosts(data.posts || data);
+      // Convert static blog posts to API format
+      const convertedStaticPosts: BlogPostAPI[] = staticBlogPosts.map(post => ({
+        _id: post.id,
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        thumbnail: post.thumbnail,
+        author: {
+          name: post.author.name,
+          avatar: post.author.avatar,
+          bio: post.author.role,
+        },
+        category: post.category.name,
+        date: post.date,
+        readTime: post.readTime,
+        tags: post.tags,
+      }));
+
+      // Fetch API posts
+      let apiPosts: BlogPostAPI[] = [];
+      try {
+        const data = await blogService.getAllPosts(params);
+        apiPosts = data.posts || data;
+      } catch (apiError) {
+        console.log('API posts not available, showing static posts only');
+      }
+
+      // Filter static posts based on category and search
+      let filteredStaticPosts = convertedStaticPosts;
+      if (selectedCategory !== 'All') {
+        filteredStaticPosts = convertedStaticPosts.filter(
+          post => post.category === selectedCategory
+        );
+      }
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredStaticPosts = filteredStaticPosts.filter(
+          post => 
+            post.title.toLowerCase().includes(query) ||
+            post.excerpt.toLowerCase().includes(query) ||
+            post.tags.some(tag => tag.toLowerCase().includes(query))
+        );
+      }
+
+      // Merge static and API posts
+      const allPosts = [...filteredStaticPosts, ...apiPosts];
+      setPosts(allPosts);
       setError(null);
     } catch (err) {
       console.error('Error loading posts:', err);

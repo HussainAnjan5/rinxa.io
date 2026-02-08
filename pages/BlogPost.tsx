@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Calendar, Clock, ArrowLeft, Share2, Facebook, Twitter, Linkedin, Tag } from 'lucide-react';
 import { blogService, getImageUrl } from '../src/services/api';
+import { getPostBySlug as getStaticPostBySlug, blogPosts as staticBlogPosts } from '../data/blogPosts';
 
 interface BlogPostAPI {
   _id: string;
@@ -48,13 +49,64 @@ const BlogPost: React.FC = () => {
   const loadPost = async () => {
     try {
       setLoading(true);
-      const postData = await blogService.getPostBySlug(slug!);
-      setPost(postData);
+      
+      // First, check if it's a static post
+      const staticPost = getStaticPostBySlug(slug!);
+      
+      if (staticPost) {
+        // Convert static post to API format
+        const convertedPost: BlogPostAPI = {
+          _id: staticPost.id,
+          slug: staticPost.slug,
+          title: staticPost.title,
+          excerpt: staticPost.excerpt,
+          content: staticPost.content,
+          thumbnail: staticPost.thumbnail,
+          author: {
+            name: staticPost.author.name,
+            avatar: staticPost.author.avatar,
+            bio: staticPost.author.role,
+          },
+          category: staticPost.category.name,
+          date: staticPost.date,
+          readTime: staticPost.readTime,
+          tags: staticPost.tags,
+        };
+        setPost(convertedPost);
 
-      // Load related posts
-      const related = await blogService.getPostsByCategory(postData.category, 3);
-      setRelatedPosts(related.filter((p: BlogPostAPI) => p.slug !== slug));
-      setError(false);
+        // Load related static posts by category
+        const relatedStatic = staticBlogPosts
+          .filter(p => p.category.name === staticPost.category.name && p.slug !== slug)
+          .slice(0, 3)
+          .map(p => ({
+            _id: p.id,
+            slug: p.slug,
+            title: p.title,
+            excerpt: p.excerpt,
+            content: p.content,
+            thumbnail: p.thumbnail,
+            author: {
+              name: p.author.name,
+              avatar: p.author.avatar,
+              bio: p.author.role,
+            },
+            category: p.category.name,
+            date: p.date,
+            readTime: p.readTime,
+            tags: p.tags,
+          }));
+        setRelatedPosts(relatedStatic);
+        setError(false);
+      } else {
+        // If not found in static posts, try API
+        const postData = await blogService.getPostBySlug(slug!);
+        setPost(postData);
+
+        // Load related posts from API
+        const related = await blogService.getPostsByCategory(postData.category, 3);
+        setRelatedPosts(related.filter((p: BlogPostAPI) => p.slug !== slug));
+        setError(false);
+      }
     } catch (err) {
       console.error('Error loading post:', err);
       setError(true);
